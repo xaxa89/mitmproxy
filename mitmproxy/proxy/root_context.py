@@ -64,7 +64,7 @@ class RootContext(object):
                 else:
                     ignore = self.config.check_ignore((client_hello.sni, 443))
             if ignore:
-                return protocol.RawTCPLayer(top_layer, ignore=True)
+                return protocol.RawTCPLayer(top_layer, ignore=True, serverFirst = self.config.options.tcp_server_first)
 
         # 2. Always insert a TLS layer, even if there's neither client nor server tls.
         # An inline script may upgrade from http to https,
@@ -87,7 +87,7 @@ class RootContext(object):
 
         # 4. Check for --tcp
         if self.config.check_tcp(top_layer.server_conn.address):
-            return protocol.RawTCPLayer(top_layer)
+            return protocol.RawTCPLayer(top_layer,serverFirst = self.config.options.tcp_server_first)
 
         # 5. Check for TLS ALPN (HTTP1/HTTP2)
         if isinstance(top_layer, protocol.TlsLayer):
@@ -104,7 +104,7 @@ class RootContext(object):
             all(65 <= x <= 90 or 97 <= x <= 122 for x in six.iterbytes(d))
         )
         if self.config.options.rawtcp and not is_ascii:
-            return protocol.RawTCPLayer(top_layer)
+            return protocol.RawTCPLayer(top_layer,serverFirst = self.config.options.tcp_server_first)
 
         # 7. Assume HTTP1 by default
         return protocol.Http1Layer(top_layer, 'transparent')

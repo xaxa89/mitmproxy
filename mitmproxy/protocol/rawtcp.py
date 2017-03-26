@@ -14,8 +14,9 @@ from mitmproxy.protocol import base
 class RawTCPLayer(base.Layer):
     chunk_size = 4096
 
-    def __init__(self, ctx, ignore=False):
+    def __init__(self, ctx, ignore=False, serverFirst = False):
         self.ignore = ignore
+        self.isFirstMessageProcessed = not serverFirst
         super(RawTCPLayer, self).__init__(ctx)
 
     def __call__(self):
@@ -38,6 +39,8 @@ class RawTCPLayer(base.Layer):
                     dst = server if conn == client else client
 
                     size = conn.recv_into(buf, self.chunk_size)
+                    if conn == server:
+                            self.isFirstMessageProcessed = True
                     if not size:
                         conns.remove(conn)
                         # Shutdown connection to the other peer
@@ -56,7 +59,8 @@ class RawTCPLayer(base.Layer):
                     if not self.ignore:
                         flow.messages.append(tcp_message)
                         self.channel.ask("tcp_message", flow)
-                    dst.sendall(tcp_message.content)
+                    if self.isFirstMessageProcessed == True:
+                        dst.sendall(tcp_message.content)
 
         except (socket.error, netlib.exceptions.TcpException, SSL.Error) as e:
             if not self.ignore:

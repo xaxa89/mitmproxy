@@ -15,7 +15,7 @@ import zipfile
 from os.path import join, abspath, normpath, dirname, exists, basename
 
 import click
-import pysftp
+#import pysftp
 
 # https://virtualenv.pypa.io/en/latest/userguide.html#windows-notes
 # scripts and executables on Windows go in ENV\Scripts\ instead of ENV/bin/
@@ -186,6 +186,9 @@ def make_wheel():
                     [VENV_PIP, "install", "-q", "https://snapshots.mitmproxy.org/misc/lxml-3.6.0-cp35-cp35m-win32.whl"]
                 )
             subprocess.check_call([VENV_PIP, "install", "-q", wheel_name()])
+            print("Installing of typing")
+            subprocess.check_call([VENV_PIP, "install", "-q", "typing"])
+            print("Finishing installation of typing")
 
             print("Running tools...")
             for tool in TOOLS:
@@ -269,66 +272,66 @@ def upload_release(username, password, repository):
     ])
 
 
-@cli.command("upload-snapshot")
-@click.option("--host", envvar="SNAPSHOT_HOST", prompt=True)
-@click.option("--port", envvar="SNAPSHOT_PORT", type=int, default=22)
-@click.option("--user", envvar="SNAPSHOT_USER", prompt=True)
-@click.option("--private-key", default=join(RELEASE_DIR, "rtool.pem"))
-@click.option("--private-key-password", envvar="SNAPSHOT_PASS", prompt=True, hide_input=True)
-@click.option("--wheel/--no-wheel", default=False)
-@click.option("--bdist/--no-bdist", default=False)
-def upload_snapshot(host, port, user, private_key, private_key_password, wheel, bdist):
-    """
-    Upload snapshot to snapshot server
-    """
-    with pysftp.Connection(host=host,
-                           port=port,
-                           username=user,
-                           private_key=private_key,
-                           private_key_pass=private_key_password) as sftp:
-        dir_name = "snapshots/v{}".format(get_version())
-        sftp.makedirs(dir_name)
-        with sftp.cd(dir_name):
-            files = []
-            if wheel:
-                files.append(wheel_name())
-            if bdist:
-                for bdist in BDISTS.keys():
-                    files.append(archive_name(bdist))
+# @cli.command("upload-snapshot")
+# @click.option("--host", envvar="SNAPSHOT_HOST", prompt=True)
+# @click.option("--port", envvar="SNAPSHOT_PORT", type=int, default=22)
+# @click.option("--user", envvar="SNAPSHOT_USER", prompt=True)
+# @click.option("--private-key", default=join(RELEASE_DIR, "rtool.pem"))
+# @click.option("--private-key-password", envvar="SNAPSHOT_PASS", prompt=True, hide_input=True)
+# @click.option("--wheel/--no-wheel", default=False)
+# @click.option("--bdist/--no-bdist", default=False)
+# def upload_snapshot(host, port, user, private_key, private_key_password, wheel, bdist):
+#     """
+#     Upload snapshot to snapshot server
+#     """
+#     with pysftp.Connection(host=host,
+#                            port=port,
+#                            username=user,
+#                            private_key=private_key,
+#                            private_key_pass=private_key_password) as sftp:
+#         dir_name = "snapshots/v{}".format(get_version())
+#         sftp.makedirs(dir_name)
+#         with sftp.cd(dir_name):
+#             files = []
+#             if wheel:
+#                 files.append(wheel_name())
+#             if bdist:
+#                 for bdist in BDISTS.keys():
+#                     files.append(archive_name(bdist))
 
-            for f in files:
-                local_path = join(DIST_DIR, f)
-                remote_filename = f.replace(get_version(), get_snapshot_version())
-                symlink_path = "../{}".format(f.replace(get_version(), "latest"))
+#             for f in files:
+#                 local_path = join(DIST_DIR, f)
+#                 remote_filename = f.replace(get_version(), get_snapshot_version())
+#                 symlink_path = "../{}".format(f.replace(get_version(), "latest"))
 
-                # Upload new version
-                print("Uploading {} as {}...".format(f, remote_filename))
-                with click.progressbar(length=os.stat(local_path).st_size) as bar:
-                    # We hide the file during upload
-                    sftp.put(
-                        local_path,
-                        "." + remote_filename,
-                        callback=lambda done, total: bar.update(done - bar.pos)
-                    )
+#                 # Upload new version
+#                 print("Uploading {} as {}...".format(f, remote_filename))
+#                 with click.progressbar(length=os.stat(local_path).st_size) as bar:
+#                     # We hide the file during upload
+#                     sftp.put(
+#                         local_path,
+#                         "." + remote_filename,
+#                         callback=lambda done, total: bar.update(done - bar.pos)
+#                     )
 
-                # Delete old versions
-                old_version = f.replace(get_version(), "*")
-                for f_old in sftp.listdir():
-                    if fnmatch.fnmatch(f_old, old_version):
-                        print("Removing {}...".format(f_old))
-                        sftp.remove(f_old)
+#                 # Delete old versions
+#                 old_version = f.replace(get_version(), "*")
+#                 for f_old in sftp.listdir():
+#                     if fnmatch.fnmatch(f_old, old_version):
+#                         print("Removing {}...".format(f_old))
+#                         sftp.remove(f_old)
 
-                # Show new version
-                sftp.rename("." + remote_filename, remote_filename)
+#                 # Show new version
+#                 sftp.rename("." + remote_filename, remote_filename)
 
-                # update symlink for the latest release
-                if sftp.lexists(symlink_path):
-                    print("Removing {}...".format(symlink_path))
-                    sftp.remove(symlink_path)
-                if f != wheel_name():
-                    # "latest" isn't a proper wheel version, so this could not be installed.
-                    # https://github.com/mitmproxy/mitmproxy/issues/1065
-                    sftp.symlink("v{}/{}".format(get_version(), remote_filename), symlink_path)
+#                 # update symlink for the latest release
+#                 if sftp.lexists(symlink_path):
+#                     print("Removing {}...".format(symlink_path))
+#                     sftp.remove(symlink_path)
+#                 if f != wheel_name():
+#                     # "latest" isn't a proper wheel version, so this could not be installed.
+#                     # https://github.com/mitmproxy/mitmproxy/issues/1065
+#                     sftp.symlink("v{}/{}".format(get_version(), remote_filename), symlink_path)
 
 
 if __name__ == "__main__":

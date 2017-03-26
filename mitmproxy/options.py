@@ -70,6 +70,7 @@ class Options(optmanager.OptManager):
             mode = "regular",  # type: str
             no_upstream_cert = False,  # type: bool
             rawtcp = False,  # type: bool
+            tcp_server_first = False,  # type: bool
             websockets = False,  # type: bool
             spoof_source_address = False,  # type: bool
             upstream_server = "",  # type: str
@@ -130,6 +131,7 @@ class Options(optmanager.OptManager):
         self.mode = mode
         self.no_upstream_cert = no_upstream_cert
         self.rawtcp = rawtcp
+        self.tcp_server_first = tcp_server_first
         self.websockets = websockets
         self.spoof_source_address = spoof_source_address
         self.upstream_server = upstream_server

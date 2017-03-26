@@ -255,6 +255,7 @@ def get_common_options(args):
         no_upstream_cert = args.no_upstream_cert,
         spoof_source_address = args.spoof_source_address,
         rawtcp = args.rawtcp,
+        tcp_server_first = args.tcp_server_first,
         websockets = args.websockets,
         upstream_server = upstream_server,
         upstream_auth = args.upstream_auth,
@@ -474,6 +475,8 @@ def proxy_options(parser):
                         "Disabled by default. "
                         "Default value will change in a future version."
                         )
+    group.add_argument("--server-first",action="store_true",dest="tcp_server_first",
+                        help="Ignore messages from client until server send first message")
     websockets = group.add_mutually_exclusive_group()
     websockets.add_argument("--websockets", action="store_true", dest="websockets")
     websockets.add_argument("--no-websockets", action="store_false", dest="websockets",
